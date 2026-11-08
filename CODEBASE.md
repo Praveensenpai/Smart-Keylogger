@@ -168,6 +168,15 @@ Role: launcher UI · 32 lines · no root required
 - CI builds with **no** `local.properties`, so `BuildConfig.BOT_TOKEN`/`CHAT_ID` are empty and the public APK carries no credentials. Users supply them via `telegram.conf`.
 - Release asset name: `smart-keylogger-<versionName>.apk`.
 
+### On-device verification
+
+`tools/device-retest.sh [ip:port]` (or no arg over USB) installs the APK, binds the service, types, backspaces, forces a rotation and upload, then asserts: `Starting service`, a 2xx `sendDocument`, no upload errors, a delta-only line, no full-text re-dump, and a `<backspace>` marker. Exit 0 = pass, 1 = a check failed or no device, 2 = bad APK path. Log at `/tmp/opencode/device-retest.log` (override with `LOG=`).
+
+Two traps it exists to catch, both proven on device:
+
+- **The rebind toggle must change the setting.** Writing the same `enabled_accessibility_services` value back is a no-op; `AccessibilityManagerService` skips unchanged settings, the service is never unbound, `onServiceConnected` never runs, and nothing is rotated or uploaded. The empty value must be quoted *inside* the remote shell (`adb shell 'settings put secure enabled_accessibility_services ""'`) — passing an unquoted empty arg through `adb shell` drops it and the write fails.
+- **`dumpsys accessibility` cannot prove a live connection.** It lists enabled packages even when nothing is bound, which is how a failed run once reported "bound: 2". Assert on the `Starting service` log line instead.
+
 ### Local
 
 ```bash
