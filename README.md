@@ -185,7 +185,7 @@ The file then disappears from `outbox/`. Any failure logs `sendDocument http=<co
 
 ## 📜 License
 
-No license file is present in this repository. Treat it as all-rights-reserved until one is added.
+MIT — see [LICENSE](LICENSE). Provided as-is, no warranty. Use only on devices you own or have explicit written permission to test.
 
 ---
 
