@@ -13,6 +13,12 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
+    env:
+      # ubuntu-latest ships the Android SDK preinstalled. Do not use
+      # android-actions/setup-android: it runs `sdkmanager tools`, a package
+      # that no longer exists, and the job dies before Gradle starts.
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,11 +29,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept licenses
-        run: yes | sdkmanager --licenses > /dev/null
+      - name: Verify Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM=$(command -v sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")
+          if [ ! -d "$ANDROID_HOME/platforms/android-35" ] || [ ! -d "$ANDROID_HOME/build-tools/35.0.0" ]; then
+            yes | "$SDKM" --licenses > /dev/null || true
+            "$SDKM" "platforms;android-35" "build-tools;35.0.0"
+          fi
+          ls "$ANDROID_HOME/platforms"
+          ls "$ANDROID_HOME/build-tools"
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
 
       - name: Build debug APK
         run: |
@@ -37,10 +50,12 @@ jobs:
 
       - name: Rename artifact
         run: |
-          SRC=AndroidKeylogger/app/build/outputs/apk/debug/app-debug.apk
-          DEST="AndroidKeylogger/$(grep -oP 'versionName "\K[^"]+' AndroidKeylogger/app/build.gradle).apk"
+          cd AndroidKeylogger
+          VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
+          SRC=app/build/outputs/apk/debug/app-debug.apk
+          DEST="smart-keylogger-${VERSION}.apk"
           cp "$SRC" "$DEST"
-          echo "ARTIFACT=$DEST" >> "$GITHUB_ENV"
+          echo "ARTIFACT=AndroidKeylogger/$DEST" >> "$GITHUB_ENV"
           sha256sum "$DEST"
 
       - name: Upload artifact
