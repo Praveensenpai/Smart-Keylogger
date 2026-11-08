@@ -1,0 +1,16 @@
+# Secrets: injected at build time, never committed.
+local.properties
+
+# Build output
+.gradle/
+build/
+*.apk
+*.aab
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS noise
+.DS_Store
