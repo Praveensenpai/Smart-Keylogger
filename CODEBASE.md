@@ -161,6 +161,15 @@ Role: launcher UI · 32 lines · no root required
 
 ## 5. Verification Commands
 
+### CI / release
+
+- Workflow: `.github/workflows/release.yml`, triggers on `v*` tags and `workflow_dispatch`
+- **Do not** use `android-actions/setup-android@v3`: it runs `sdkmanager tools`, a package removed from the SDK repo, and the job dies before Gradle starts. `ubuntu-latest` ships the SDK; the workflow pins `ANDROID_HOME=/usr/local/lib/android/sdk` and installs API 35 only if missing.
+- CI builds with **no** `local.properties`, so `BuildConfig.BOT_TOKEN`/`CHAT_ID` are empty and the public APK carries no credentials. Users supply them via `telegram.conf`.
+- Release asset name: `smart-keylogger-<versionName>.apk`.
+
+### Local
+
 ```bash
 # Build (gradlew is not executable in this repo)
 cd AndroidKeylogger
