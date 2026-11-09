@@ -117,7 +117,10 @@ r ls -l "$FILES/outbox/"
 
 log "-- assertions"
 SENT=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'sendDocument ok http=2' || true)
-FAILED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'sendDocument http=' || true)
+# Failures surface two ways: a non-2xx status ('sendDocument http=4xx') or a
+# thrown exception ('sendDocument failed'). Matching only 'sendDocument http='
+# silently reported 0 failures during a real UnknownHostException run.
+FAILED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -E 'sendDocument (failed|http=[0-9])' | grep -vc 'sendDocument ok http=2' || true)
 # `dumpsys accessibility` lists enabled packages even when nothing is bound,
 # so it cannot prove a live connection. onServiceConnected() is the only thing
 # that rotates and uploads, and it always logs this line.
