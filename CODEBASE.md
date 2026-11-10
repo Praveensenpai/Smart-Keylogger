@@ -200,6 +200,7 @@ Role: launcher UI · 32 lines · no root required
 - **Do not** use `android-actions/setup-android@v3`: it runs `sdkmanager tools`, a package removed from the SDK repo, and the job dies before Gradle starts. `ubuntu-latest` ships the SDK; the workflow pins `ANDROID_HOME=/usr/local/lib/android/sdk` and installs API 35 only if missing.
 - CI builds with **no** `local.properties`, so `BuildConfig.BOT_TOKEN`/`CHAT_ID` are empty and the public APK carries no credentials. Users supply them via `telegram.conf`.
 - Release asset name: `smart-keylogger-<versionName>.apk`.
+- **Release notes**: put them in `docs/release-notes-v<versionName>.md` (the `v` is optional; both spellings are checked). The workflow passes `body_path` and only falls back to `generate_release_notes` when no file exists. `generate_release_notes: true` unconditionally **overwrites** a custom body, which is why v2.1 initially shipped with only "Full Changelog" until `gh release edit --notes-file` fixed it.
 
 ### On-device verification
 

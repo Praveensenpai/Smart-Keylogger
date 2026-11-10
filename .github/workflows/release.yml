@@ -57,6 +57,22 @@ jobs:
           cp "$SRC" "$DEST"
           echo "ARTIFACT=AndroidKeylogger/$DEST" >> "$GITHUB_ENV"
           sha256sum "$DEST"
+          # Prefer hand-written notes (docs/release-notes-<version>.md) over the
+          # auto-generated changelog. generate_release_notes: true OVERWRITES any
+          # custom body, which is why v2.1 shipped with only "Full Changelog".
+          # versionName has no leading "v", so both spellings are accepted.
+          BODY=""
+          for CAND in "$GITHUB_WORKSPACE/docs/release-notes-${VERSION}.md" \
+                      "$GITHUB_WORKSPACE/docs/release-notes-v${VERSION}.md"; do
+            if [ -f "$CAND" ]; then BODY="$CAND"; break; fi
+          done
+          if [ -n "$BODY" ]; then
+            echo "BODY_PATH=$BODY" >> "$GITHUB_ENV"
+            echo "release notes: ${BODY#"$GITHUB_WORKSPACE"/}"
+          else
+            echo "BODY_PATH=" >> "$GITHUB_ENV"
+            echo "release notes: none for ${VERSION}, using generated changelog"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -69,4 +85,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.ARTIFACT }}
-          generate_release_notes: true
+          body_path: ${{ env.BODY_PATH }}
+          generate_release_notes: ${{ env.BODY_PATH == '' }}
