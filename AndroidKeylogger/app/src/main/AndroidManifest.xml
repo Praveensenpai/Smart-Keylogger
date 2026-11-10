@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
   <uses-permission android:name="android.permission.INTERNET"/>
+  <!-- The hourly upload runs from an alarm broadcast and must finish even if
+       the screen is off, so it holds a short partial wake lock. -->
+  <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
   <!-- API 30+ package visibility: without this, getApplicationInfo() throws for
        almost every app, so log lines show raw package names instead of labels. -->
@@ -40,6 +43,10 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+        <!-- Alarm target. Not exported: only our own PendingIntent fires it. -->
+        <receiver
+            android:name=".UploadReceiver"
+            android:exported="false"/>
     </application>
 
 </manifest>

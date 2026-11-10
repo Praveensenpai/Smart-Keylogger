@@ -56,9 +56,10 @@ Events are written to disk immediately. Once an hour the pending file is rotated
 
 - **🎯 App + screen context** — every line records which app and which window/page the keystroke happened in
 - **⏱️ Hourly file delivery** — one `sendDocument` per hour, not one message per keystroke
+- **🔋 Doze-proof scheduling** — the hourly trigger is an `AlarmManager` `RTC_WAKEUP` broadcast, not a `Handler` timer, so it fires with the screen off and the phone asleep. Verified while the device reported `mWakefulness=Dozing`. A missed cycle is also caught up on the next user interaction, covering OEMs that throttle alarms.
 - **📏 50 MB safe** — per-event text clipped to 500 chars, rotations split at 8 MB, and any file above 45 MB is parked as `*.failed` so it can never deadlock the queue
 - **🧹 Self-pruning** — daily archives older than 7 days are deleted automatically
-- **📴 Offline-first** — every event hits disk before any network call; queue survives reboots
+- **📴 Offline-first** — every event hits disk before any network call; queue survives reboots and flushes itself on the next alarm once the network is back
 - **🔁 Retry-safe outbox** — files are deleted only after Telegram returns HTTP 2xx, so failures replay automatically
 - **🗂️ Daily archives** — `keylog_YYYYMMDD.txt` kept separately for `adb pull`
 - **📦 Zero server** — no Go daemon, no port forwarding, no local IP configuration

