@@ -106,7 +106,7 @@ They are baked into `BuildConfig` at build time, so nothing secret ends up in th
 Release APKs are built by CI **without credentials**, so the token is never in a public artifact. Grab one from [Releases](https://github.com/Praveensenpai/Smart-Keylogger/releases/latest) and push a config file instead:
 
 ```bash
-adb install -r smart-keylogger-2.0.apk
+adb install -r smart-keylogger-2.1.apk
 
 cat > telegram.conf <<'EOF'
 bot_token=123456789:AAExampleTokenDoNotUseThisValue
