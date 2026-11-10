@@ -1,6 +1,30 @@
 <resources>
-    <string name="app_name">AndroidKeylogger</string>
-    <string name="accessibility_service_label">System Service</string>
-    <string name="accessibility_service_description">Keeps your device services healthy.</string>
-    <string name="hint_enable_service">Enable the accessibility service to start logging.</string>
+    <string name="app_name">Smart Keylogger</string>
+    <string name="accessibility_service_label">Smart Keylogger</string>
+    <string name="accessibility_service_description">Records app text, clicks and focus events you consent to and saves them locally.</string>
+
+    <string name="disclosure">This app records text you type, taps and focus changes in other apps, and saves them on this device.\n\nWhat it records: app name, screen title, non-password text, click and focus events.\n\nWhat it never records: password fields, and any app on your blocklist.\n\nWhere data goes: stored locally by default. Uploading to a Telegram chat only happens if you turn it on and enter your own bot and chat ID.\n\nYou can pause capture from the ongoing notification at any time, and delete all data from Settings.\n\nThis app is intended for monitoring a device you own, with the knowledge of everyone who uses it.</string>
+    <string name="consent_agree">I understand and consent to this monitoring</string>
+    <string name="consent_required">Tick the consent box first</string>
+    <string name="consent_revoked">Consent revoked. Capture stopped and all logs deleted.</string>
+    <string name="enable_service_hint">Enable Smart Keylogger under Accessibility</string>
+    <string name="cannot_open_settings">Could not open accessibility settings</string>
+    <string name="action_enable">Enable monitoring</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_revoke">Revoke consent and delete data</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete_all">Delete all logs now</string>
+
+    <string name="status_no_consent">Status: not consented. Nothing is recorded.</string>
+    <string name="status_capture_local">Status: recording locally. Upload is off.</string>
+    <string name="status_capture_upload">Status: recording and uploading.</string>
+    <string name="status_paused">Status: consented but paused.</string>
+
+    <string name="settings_upload_enabled">Upload logs to my Telegram chat</string>
+    <string name="settings_bot_token">Bot token (yours)</string>
+    <string name="settings_chat_id">Chat ID</string>
+    <string name="settings_interval">Upload interval (minutes)</string>
+    <string name="settings_blocklist">Blocked packages, one per line</string>
+    <string name="settings_saved">Settings saved</string>
+    <string name="logs_deleted">All logs deleted</string>
 </resources>

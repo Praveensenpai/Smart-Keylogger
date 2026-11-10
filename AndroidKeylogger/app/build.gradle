@@ -1,16 +1,6 @@
 plugins {
     id 'com.android.application'
-}
-
-def localProps = new Properties()
-def localFile = rootProject.file('local.properties')
-if (localFile.exists()) {
-    localFile.withInputStream { localProps.load(it) }
-}
-
-def prop = { String key -> localProps.getProperty(key, '') ?: '' }
-def javaString = { String value ->
-    '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -21,27 +11,17 @@ android {
         applicationId "com.bshu2.androidkeylogger"
         minSdk 21
         targetSdk 35
-        versionCode 3
-        versionName "2.1"
-
-        // Injected from local.properties (gitignored), never committed.
-        buildConfigField "String", "BOT_TOKEN", javaString(prop('TELEGRAM_BOT_TOKEN'))
-        buildConfigField "String", "CHAT_ID", javaString(prop('TELEGRAM_CHAT_ID'))
-
-        // Upload cadence. Defaults to one hour; override in local.properties
-        // (e.g. TELEGRAM_UPLOAD_INTERVAL_MS=60000) to test quickly.
-        def interval = prop('TELEGRAM_UPLOAD_INTERVAL_MS').replaceAll('[^0-9]', '')
-        if (!interval) interval = '3600000'
-        buildConfigField "long", "UPLOAD_INTERVAL_MS", interval + "L"
-    }
-
-    buildFeatures {
-        buildConfig true
+        versionCode 4
+        versionName "3.0"
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
     }
 
     buildTypes {

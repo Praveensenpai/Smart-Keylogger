@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <CheckBox
+            android:id="@+id/upload_enabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_upload_enabled" />
+
+        <EditText
+            android:id="@+id/bot_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/settings_bot_token"
+            android:inputType="text" />
+
+        <EditText
+            android:id="@+id/chat_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/settings_chat_id"
+            android:inputType="text" />
+
+        <EditText
+            android:id="@+id/interval_min"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/settings_interval"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/blocklist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:hint="@string/settings_blocklist"
+            android:inputType="textMultiLine"
+            android:minLines="4" />
+
+        <Button
+            android:id="@+id/save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/action_save" />
+
+        <Button
+            android:id="@+id/delete_all"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/action_delete_all" />
+
+    </LinearLayout>
+</ScrollView>
