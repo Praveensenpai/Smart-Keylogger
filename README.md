@@ -14,7 +14,7 @@
 
 ## 🧭 The Six Controls
 
-v3.0 is a ground-up Kotlin rewrite built around six non-negotiable controls. Each one is enforced in code and was verified on a live device.
+Built around six non-negotiable controls. Each one is enforced in code and was verified on a live device.
 
 | # | Control | Where it lives |
 |---|---|---|
@@ -22,8 +22,20 @@ v3.0 is a ground-up Kotlin rewrite built around six non-negotiable controls. Eac
 | 2 | **Persistent ongoing notification** with a Pause / Resume action | `MonitoringNotification`, `ControlReceiver` |
 | 3 | **Explicit password exclusion** — field flags *and* inputType variants, fails closed | `KeyloggerService.isSensitiveField` |
 | 4 | **Local-first, opt-in upload** — capture works with zero network; Telegram is off until you configure your own bot | `Prefs.uploadEnabled`, `UploadPipeline` |
-| 5 | **Pause / stop / delete-all** — from the notification and from Settings | `ControlReceiver`, `SettingsActivity` |
+| 5 | **Pause / stop / delete-all** — from the notification and from the in-app Settings tab | `ControlReceiver`, `feature/settings` |
 | 6 | **Data minimization** — 2-day archive retention, 500-char event cap, 8 MB rotation chunks | `UploadPipeline` |
+
+---
+
+## 🖥️ v3.1 — Compose UI with Live Status and Log Viewer
+
+v3.1 replaces the two-activity XML UI with a single-activity Jetpack Compose / Material 3 app: a three-tab bottom bar (Home / Logs / Settings). The capture and upload pipeline is byte-for-byte unchanged from v3.0.
+
+- **Home** — consent disclosure, plus a live status monitor: accessibility-service binding (read live from `Settings.Secure`) vs. the app's own capture switch, so `On` + `Paused` states are distinguishable. The master upload switch stays disabled while the service is unbound.
+- **Logs** — read-only viewer of the last 1000 lines, seeded from the newest archive and then following the live file on a 1-second tail. It never writes, rotates, or deletes; uploads still send the complete files on your interval.
+- **Settings** — upload toggle, masked bot token (flagged as a password to accessibility too, so the guard skips it), chat ID, interval, blocklist, delete-all.
+
+Consent version bumped to 2 for the new display surface: upgrading from v3.0 re-shows the disclosure and requires a fresh consent. `minSdk` is 24.
 
 ---
 
@@ -91,7 +103,7 @@ echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 # → app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Requires JDK 17. Kotlin 2.0.20 / AGP 8.7.3 / Gradle 8.9 / compileSdk 35 / minSdk 21.
+Requires JDK 17. Kotlin 2.0.20 / AGP 8.7.3 / Gradle 8.9 / compileSdk 35 / minSdk 24 / Jetpack Compose (BOM 2024.09.03).
 
 No credentials are compiled in. Upload targets are set at runtime in Settings.
 
@@ -130,7 +142,7 @@ adb shell run-as com.bshu2.androidkeylogger grep -rl SuperSecretPW99 .
 adb shell ls -l /sdcard/Android/data/com.bshu2.androidkeylogger/files/
 ```
 
-All three return empty on v3.0.
+All three return empty on v3.1, verified against live hardware with the [device retest harness](tools/device-retest.sh).
 
 ---
 
