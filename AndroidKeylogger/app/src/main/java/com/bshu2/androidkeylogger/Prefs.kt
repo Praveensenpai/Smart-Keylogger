@@ -19,7 +19,9 @@ object Prefs {
     private const val KEY_BLOCKLIST = "blocklist"
     private const val KEY_LAST_RUN = "last_upload_at"
 
-    const val CURRENT_CONSENT_VERSION = 1
+    // v2 adds the on-device log viewer, a new display surface for captured
+    // text, so consent is collected again on upgrade.
+    const val CURRENT_CONSENT_VERSION = 2
     const val DEFAULT_INTERVAL_MS = 3_600_000L
 
     private val DEFAULT_BLOCKLIST = listOf(

@@ -27,4 +27,33 @@
     <string name="settings_blocklist">Blocked packages, one per line</string>
     <string name="settings_saved">Settings saved</string>
     <string name="logs_deleted">All logs deleted</string>
+
+    <!-- Compose redesign (v3.1) -->
+    <string name="tab_home">Home</string>
+    <string name="tab_logs">Logs</string>
+    <string name="tab_settings">Settings</string>
+    <string name="label_service">Accessibility service</string>
+    <string name="label_capture">Capture</string>
+    <string name="label_upload">Upload</string>
+    <string name="label_last_upload">Last upload</string>
+    <string name="value_on">On</string>
+    <string name="value_off">Off</string>
+    <string name="value_recording">Recording</string>
+    <string name="value_paused">Paused</string>
+    <string name="value_never">Never</string>
+    <string name="master_switch">Capture keystrokes</string>
+    <string name="master_switch_disabled">Turn on the accessibility service first</string>
+    <string name="consent_title">Consent required</string>
+    <string name="action_open_accessibility">Open accessibility settings</string>
+    <string name="action_confirm_revoke">Revoke and delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="revoke_title">Revoke consent?</string>
+    <string name="revoke_message">Capture stops immediately and every log on this device is deleted.</string>
+    <string name="logs_title">Recent activity</string>
+    <string name="logs_follow">Follow</string>
+    <string name="logs_empty">No log lines yet. Turn on the service and type something.</string>
+    <string name="logs_limit_hint">Showing the last 1000 lines. Uploads still send the full files on your interval.</string>
+    <string name="settings_delete_confirm_title">Delete all logs?</string>
+    <string name="settings_delete_confirm_message">This removes the pending queue, the outbox and the daily archives from this device.</string>
+    <string name="settings_upload_hint">Off by default. When off, logs stay on this device.</string>
 </resources>
