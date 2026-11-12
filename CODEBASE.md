@@ -34,7 +34,7 @@ MonitoringNotification  <- always-visible consent indicator, ONGOING, not dismis
 
 - **Language**: Kotlin 2.0.20, JVM target 17, Android
 - **Build**: AGP 8.7.3, Gradle 8.9, `compileSdk 35`, `targetSdk 35`, `minSdk 24`
-- **UI**: Jetpack Compose (BOM 2024.09.03, Material 3), single activity, `android:Theme.Material.Light.NoActionBar`, dynamic color on S+. No `navigation-compose`; a `rememberSaveable` tab index in `AppScaffold` is the whole router.
+- **UI**: Jetpack Compose (BOM 2024.09.03, Material 3), single activity, `android:Theme.Material.Light.NoActionBar`, dynamic color on S+. No `navigation-compose`; a `rememberSaveable` tab index in `AppScaffold` is the whole router. **Language is always Japanese** (v3.2): `values/strings.xml` is the Japanese source, no `values-en`; notification strings in `MonitoringNotification` are translated in code. Log-line event markers (`TEXT`/`CLICKED`/`FOCUSED`) stay English — data format, not UI.
 - **Consent is the master gate**: `Prefs.hasConsent()` is checked in the service, the pipeline, and the alarm receiver. No consent means no capture, no upload, no notification.
 - **Upload is opt-in and user-configured**: destination comes from `Prefs` (settings screen), never from build-time secrets. No destination means local-only.
 - **Password fields are never recorded**: `isSensitiveField()` checks `isPassword` and the `TYPE_TEXT_VARIATION_*_PASSWORD` / `TYPE_NUMBER_VARIATION_PASSWORD` mask, and **fails closed** on any exception. Verified necessary on MIUI, where the accessibility layer exposes plaintext for password nodes.
