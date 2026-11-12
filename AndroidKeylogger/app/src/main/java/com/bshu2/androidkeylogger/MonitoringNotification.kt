@@ -22,17 +22,17 @@ object MonitoringNotification {
         }
         ensureChannel(ctx, nm)
         val enabled = Prefs.captureEnabled(ctx)
-        val title = if (enabled) "Monitoring active" else "Monitoring paused"
+        val title = if (enabled) "監視中" else "監視 一時停止中"
         val text = if (enabled) {
-            "Keystroke capture is running with your consent. Tap to manage."
+            "同意のもとでキーストロークを記録しています。タップして管理。"
         } else {
-            "Keystroke capture is paused."
+            "キーストロークの記録は一時停止中です。"
         }
         val open = PendingIntent.getActivity(
             ctx, 0, Intent(ctx, MainActivity::class.java), flags()
         )
         val toggleAction = if (enabled) ControlReceiver.ACTION_PAUSE else ControlReceiver.ACTION_RESUME
-        val toggleLabel = if (enabled) "Pause" else "Resume"
+        val toggleLabel = if (enabled) "一時停止" else "再開"
         val toggle = PendingIntent.getBroadcast(
             ctx, 1,
             Intent(ctx, ControlReceiver::class.java).setAction(toggleAction),
@@ -63,9 +63,9 @@ object MonitoringNotification {
             nm.getNotificationChannel(CHANNEL_ID) == null
         ) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "Monitoring", NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, "監視", NotificationManager.IMPORTANCE_LOW
             )
-            channel.description = "Always-visible indicator while capture is active"
+            channel.description = "記録が有効な間の常時表示インジケーター"
             nm.createNotificationChannel(channel)
         }
     }
